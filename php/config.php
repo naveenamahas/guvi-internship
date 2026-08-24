@@ -1,7 +1,8 @@
 <?php
 /**
  * config.php
- * Updated configuration for Aiven MySQL (SSL), Remote Redis, and MongoDB Atlas.
+ * Central configuration file for Cloud Databases:
+ * MySQL (Aiven SSL), Redis (TLS), MongoDB (Atlas)
  */
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -9,7 +10,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use Predis\Client as RedisClient;
 use MongoDB\Client as MongoClient;
 
-// ---------------- MySQL (PDO with SSL Bypass Verification) ----------------
+// ---------------- MySQL (Aiven with SSL) ----------------
 define('DB_HOST', 'guvi-mysql-naveena-b99e.h.aivencloud.com');
 define('DB_PORT', '17848');
 define('DB_NAME', 'defaultdb');
@@ -21,29 +22,26 @@ function getMySQLConnection()
     try {
         $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
         
-        $options = [
-            PDO::ATTR_ERRMODE                  => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE       => PDO::FETCH_ASSOC,
-            PDO::ATTR_TIMEOUT                  => 10,
-        ];
-
-        // Enable SSL options if defined in PHP MySQL driver
-        if (defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
-            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
-        }
-
-        return new PDO($dsn, DB_USER, DB_PASS, $options);
+        $pdo = new PDO(
+            $dsn,
+            DB_USER,
+            DB_PASS,
+            [
+                PDO::ATTR_ERRMODE                  => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE       => PDO::FETCH_ASSOC,
+                PDO::MYSQL_ATTR_SSL_CA            => true,
+                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+            ]
+        );
+        return $pdo;
     } catch (PDOException $e) {
         http_response_code(500);
-        echo json_encode([
-            'success' => false, 
-            'message' => 'Database connection failed: ' . $e->getMessage()
-        ]);
+        echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $e->getMessage()]);
         exit;
     }
 }
 
-// ---------------- Redis Configuration ----------------
+// ---------------- Redis (Upstash/Cloud TLS) ----------------
 function getRedisConnection()
 {
     return new RedisClient([
@@ -52,11 +50,10 @@ function getRedisConnection()
         'port'     => 12386,
         'user'     => 'default',
         'password' => 'wAOF46KmlYOOMUDJa1Dxm5uSZiZO0wd2',
-        'timeout'  => 5.0,
     ]);
 }
 
-// ---------------- MongoDB Configuration ----------------
+// ---------------- MongoDB (Atlas) ----------------
 function getMongoConnection()
 {
     $uri = "mongodb+srv://naveenaarjava_db_user:WrKuvyjdk6gFMYFL@cluster0.abf05yo.mongodb.net/?appName=Cluster0";
