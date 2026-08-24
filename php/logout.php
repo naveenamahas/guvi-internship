@@ -1,8 +1,7 @@
 <?php
 /**
  * logout.php
- * Deletes the session token from REDIS. The browser separately clears its
- * localStorage entry via js/profile.js.
+ * Deletes the session token from REDIS.
  */
 
 header('Content-Type: application/json');
