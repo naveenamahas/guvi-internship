@@ -45,7 +45,7 @@ function getMySQLConnection()
 function getRedisConnection()
 {
     return new RedisClient([
-        'scheme'   => 'rediss',
+        'scheme'   => 'tcp', // Changed from 'rediss' to 'tcp'
         'host'     => 'generous-harmony-powder-97476.db.redis.io',
         'port'     => 12386,
         'user'     => 'default',
