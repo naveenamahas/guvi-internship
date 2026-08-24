@@ -1,16 +1,12 @@
 <?php
 /**
  * profile.php
- * Every request must include the session token (the one saved in the
- * browser's localStorage after login). The token is looked up in REDIS to
- * find out which user is calling. Profile fields (age, dob, contact) are
- * then read from / written to MONGODB.
+ * Validates session token via Redis, stores/fetches profile in MongoDB.
  */
 
 header('Content-Type: application/json');
 require_once __DIR__ . '/config.php';
 
-// Token can arrive as an Authorization header or as a normal field
 $headers = getallheaders();
 $token   = $headers['Authorization'] ?? ($_POST['token'] ?? $_GET['token'] ?? '');
 $token   = str_replace('Bearer ', '', trim($token));
@@ -21,8 +17,8 @@ if ($token === '') {
     exit;
 }
 
-$redis        = getRedisConnection();
-$sessionData  = $redis->get("session:$token");
+$redis       = getRedisConnection();
+$sessionData = $redis->get("session:$token");
 
 if (!$sessionData) {
     http_response_code(401);
@@ -30,12 +26,11 @@ if (!$sessionData) {
     exit;
 }
 
-$session = json_decode($sessionData, true);
-$userId  = $session['user_id'];
+$session  = json_decode($sessionData, true);
+$userId   = $session['user_id'];
 $profiles = getMongoConnection();
-$method  = $_SERVER['REQUEST_METHOD'];
+$method   = $_SERVER['REQUEST_METHOD'];
 
-// ---------------- Fetch profile ----------------
 if ($method === 'GET') {
     $doc = $profiles->findOne(['user_id' => $userId]);
 
@@ -51,7 +46,6 @@ if ($method === 'GET') {
     exit;
 }
 
-// ---------------- Update profile ----------------
 if ($method === 'POST') {
     $age     = $_POST['age'] ?? '';
     $dob     = $_POST['dob'] ?? '';
