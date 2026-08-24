@@ -1,8 +1,7 @@
 <?php
 /**
  * register.php
- * Receives AJAX POST data (username, email, password) and stores the
- * registered user in MySQL using a prepared statement.
+ * Automatically ensures the users table exists in MySQL before inserting new accounts.
  */
 
 header('Content-Type: application/json');
@@ -32,7 +31,16 @@ if (strlen($password) < 6) {
 
 $pdo = getMySQLConnection();
 
-// Check for an existing username/email using a PREPARED STATEMENT
+// AUTO-CREATE USERS TABLE IF NOT EXISTS
+$pdo->exec("CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+
+// Check for existing user
 $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
 $stmt->execute([$username, $email]);
 
@@ -44,7 +52,7 @@ if ($stmt->fetch()) {
 
 $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
-// Insert new user using a PREPARED STATEMENT
+// Insert new user
 $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
 $stmt->execute([$username, $email, $hashedPassword]);
 
