@@ -1,10 +1,7 @@
 <?php
 /**
  * login.php
- * Verifies credentials against MySQL (prepared statement), then creates a
- * random session token and stores the session details in REDIS (not a PHP
- * session). The token is returned to the browser, which stores it in
- * localStorage and sends it back on every future request.
+ * Verifies credentials against MySQL, creates session token in Redis.
  */
 
 header('Content-Type: application/json');
@@ -21,7 +18,6 @@ if ($username === '' || $password === '') {
 
 $pdo = getMySQLConnection();
 
-// PREPARED STATEMENT lookup
 $stmt = $pdo->prepare("SELECT id, username, email, password FROM users WHERE username = ?");
 $stmt->execute([$username]);
 $user = $stmt->fetch();
@@ -32,10 +28,8 @@ if (!$user || !password_verify($password, $user['password'])) {
     exit;
 }
 
-// Generate a random opaque session token
 $token = bin2hex(random_bytes(32));
 
-// Store session info in REDIS (expires after 1 hour) — no PHP session used
 $redis = getRedisConnection();
 $redis->setex(
     "session:$token",
